@@ -11,7 +11,9 @@
  */
 
 import icons from "../../vendor/fontawesome-icons.js";
+import { telemetryBus } from "../glass/telemetryBus.js";
 import { FlowCornerElement } from "./corner-element.js";
+import "./noflo-telemetry-log.js";
 
 /** The Font Awesome glyph for a named icon in the vendor map.
  * @param {string} name
@@ -55,6 +57,19 @@ export class FlowProjectCorner extends FlowCornerElement {
     this._collaboratorsPanel = null;
     /** Corners hide when there is nothing to show (work document #28). */
     this._visible = false;
+    /** The wires accordion (work document #63's Project corner tenant):
+     * the rngit/materialization log — staging and board pushes as they
+     * commit — with subscription-on-open semantics. */
+    /** @type {{ open: boolean, unsubscribe: (() => void) | null, log: any, title: string, hint: string, icon: string, label: string }} */
+    this._rngit = {
+      open: false,
+      unsubscribe: null,
+      log: null,
+      title: "Materialization log",
+      hint: "Work document staging and rngit board pushes as they commit.",
+      icon: "terminal",
+      label: "rngit",
+    };
     this.chipTitle = "Project work documents";
     this.panelSide = "left";
   }
@@ -212,7 +227,10 @@ export class FlowProjectCorner extends FlowCornerElement {
       peopleCount > 0
         ? `<span class="seg" title="Project collaborators">${icon("user-group")}<span class="label">${peopleCount} collaborator${peopleCount === 1 ? "" : "s"}</span><span class="count">${peopleCount}</span></span>`
         : "";
-    return `<span class="seg" title="The project's work documents">${icon("file-lines")}<span class="label">${parts.join(" · ")}</span><span class="count">${active}</span></span>${peopleSeg}`;
+    // The wires segment (work document #63): named for what it shows,
+    // calm when its accordion is open
+    const rngitSeg = `<span class="seg ${this._rngit.open ? "calm" : ""}" data-segment-toggle="rngit" role="button" tabindex="0" title="${escapeHtml(this._rngit.title)}: ${escapeHtml(this._rngit.hint)}">${icon(this._rngit.icon)}<span class="label">${this._rngit.label}</span></span>`;
+    return `<span class="seg" title="The project's work documents">${icon("file-lines")}<span class="label">${parts.join(" · ")}</span><span class="count">${active}</span></span>${peopleSeg}${rngitSeg}`;
   }
 
   /**
@@ -328,8 +346,102 @@ export class FlowProjectCorner extends FlowCornerElement {
         </details>      </div>`;
   }
 
+  /**
+   * The segment-toggled wires accordion (work document #63): the
+   * rngit/materialization log in the terminal grammar — read-only engine
+   * output, never a processed summary, never a second authority.
+   *
+   * @returns {string}
+   */
+  segmentHtml() {
+    if (!this._rngit.open) return "";
+    return `
+      <div class="panel telemetry" data-telemetry="rngit">
+        <div class="panel-head">
+          <span>${escapeHtml(this._rngit.title)}</span>
+          <button class="secondary" data-action="close-telemetry" data-stream="rngit" title="Close">▾</button>
+        </div>
+        <div class="telemetry-slot" id="panel-telemetry-rngit"></div>
+        <div class="hint">${escapeHtml(this._rngit.hint)}</div>
+      </div>
+    `;
+  }
+
+  /**
+   * The segment-as-toggle hook (work document #63): subscription-on-open —
+   * the bus replays its ring buffer as the history, live traffic flows
+   * while open, and closing unsubscribes so closed telemetry costs
+   * nothing.
+   *
+   * @param {string} id
+   */
+  toggleSegment(id) {
+    if (id !== "rngit") return;
+    this._rngit.open = !this._rngit.open;
+    if (this._rngit.open) {
+      this.telemetryLog().setHistory(telemetryBus().history("rngit"));
+      this._rngit.unsubscribe = telemetryBus().subscribe(
+        "rngit",
+        (/** @type {any} */ entry) => this.telemetryLog().push(entry),
+        { history: false },
+      );
+    } else {
+      this._rngit.unsubscribe?.();
+      this._rngit.unsubscribe = null;
+    }
+    this.render();
+  }
+
+  /**
+   * The persistent telemetry log element: it survives re-renders so the
+   * opened accordion's buffer outlives the panel's DOM churn.
+   *
+   * @returns {any}
+   */
+  telemetryLog() {
+    if (!this._rngit.log) {
+      this._rngit.log = /** @type {any} */ (
+        document.createElement("flow-telemetry-log")
+      );
+    }
+    return this._rngit.log;
+  }
+
+  /**
+   * Hiding the corner closes the wires accordion: the subscription is live
+   * traffic, and a hidden corner carries none (the sync panel's rule,
+   * work document #63).
+   *
+   * @param {boolean} visible
+   */
+  setVisible(visible) {
+    if (!visible && this._rngit.open) {
+      this.toggleSegment("rngit");
+    }
+    super.setVisible(visible);
+  }
+
   wireEvents() {
     for (const shadow of this._eventRoots()) {
+      // The wires accordion's persistent log rides the render (work
+      // document #63): the element is adopted into its slot, its buffer
+      // surviving the panel's DOM churn
+      const slot = shadow.querySelector("#panel-telemetry-rngit");
+      if (slot && this._rngit.open && this._rngit.log) {
+        slot.appendChild(this._rngit.log);
+      }
+      shadow
+        .querySelector("[data-action='close-telemetry']")
+        ?.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          this.toggleSegment(
+            String(
+              /** @type {HTMLElement} */ (event.target)?.getAttribute?.(
+                "data-stream",
+              ) ?? "rngit",
+            ),
+          );
+        });
       shadow
         .querySelector("[data-action='create-doc']")
         ?.addEventListener("click", (/** @type {any} */ event) => {

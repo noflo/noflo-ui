@@ -196,6 +196,112 @@ describe("echo handlers (work document #37 contract, #56 harness)", () => {
     assert.equal(callCount(deps, "reloadIntoFreshBoot"), 1);
   });
 
+  it("the rngit log publishes staging and board-push lines (work document #63)", () => {
+    const deps = makeDeps();
+    /** @type {any[]} */
+    const telemetry = [];
+    deps.emitTelemetry = (
+      /** @type {string} */ stream,
+      /** @type {any} */ entry,
+    ) => {
+      if (stream === "rngit") telemetry.push(entry);
+    };
+    const handlers = createEchoHandlers(deps);
+    // Local staging: the workdoc CRDT echoes ride the log as [ STAGE ]
+    handlers["workdoc/created"]({
+      protocol: "workdoc",
+      command: "created",
+      payload: { id: "abc123", title: "Design notes", scope: "proposed" },
+    });
+    handlers["workdoc/scoped"]({
+      protocol: "workdoc",
+      command: "scoped",
+      payload: { id: "abc123", pendingScope: "active" },
+    });
+    handlers["workdoc/titled"]({
+      protocol: "workdoc",
+      command: "titled",
+      payload: { id: "abc123", title: "Better title" },
+    });
+    handlers["workdoc/edited"]({
+      protocol: "workdoc",
+      command: "edited",
+      payload: { id: "abc123" },
+    });
+    handlers["workdoc/repo"]({
+      protocol: "workdoc",
+      command: "repo",
+      payload: { url: "rns://abc/public/noflo-ui" },
+    });
+    const stageLines = telemetry.slice();
+    assert.equal(stageLines.length, 5, "every staging echo is a log line");
+    assert.equal(stageLines[0].status, "STAGE");
+    assert.match(stageLines[0].message, /created "Design notes"/);
+    assert.match(stageLines[1].message, /scope \u2192 active/);
+    assert.match(stageLines[2].message, /renamed to "Better title"/);
+    assert.equal(stageLines[4].status, "CONFIG");
+    // Board pushes: the materializer's narration carries the action as the
+    // tag, the title and board number in the message
+    handlers["kind:progress"]({
+      kind: "progress",
+      state: "done",
+      operation: "workdocs.materialize",
+      stage: "fetched",
+      detail: { title: "Design notes", board: 4 },
+    });
+    handlers["kind:progress"]({
+      kind: "progress",
+      state: "done",
+      operation: "workdocs.materialize",
+      stage: "skipped",
+      detail: { title: "Other's doc", detail: "authored by another identity" },
+    });
+    handlers["kind:progress"]({
+      kind: "progress",
+      state: "failed",
+      operation: "workdocs.materialize",
+      stage: "sync",
+      detail: { error: "link refused" },
+    });
+    handlers["kind:progress"]({
+      kind: "progress",
+      state: "done",
+      operation: "workdocs.remote.connect",
+      stage: "connect",
+      detail: { repo: "public/noflo-ui" },
+    });
+    const boardLines = telemetry.slice(5);
+    assert.equal(boardLines.length, 4);
+    assert.equal(boardLines[0].status, "FETCHED");
+    assert.match(
+      boardLines[0].message,
+      /pushed "Design notes" \u2192 board #4/,
+    );
+    assert.equal(boardLines[1].status, "SKIPPED");
+    assert.equal(
+      boardLines[1].tone,
+      "fail",
+      "a skip is the fail semantic (the attention color)",
+    );
+    assert.equal(boardLines[2].status, "SYNC");
+    assert.equal(boardLines[2].tone, "fail");
+    assert.match(boardLines[2].message, /board sync failed: link refused/);
+    assert.equal(boardLines[3].status, "CONNECT");
+    assert.match(boardLines[3].message, /board public\/noflo-ui/);
+    // Unrelated operations publish nothing
+    handlers["kind:progress"]({
+      kind: "progress",
+      state: "running",
+      operation: "mesh.connect",
+      stage: "path",
+    });
+    assert.equal(
+      telemetry.length,
+      9,
+      "only the rngit family reaches the stream",
+    );
+  });
+
   it("graph echoes and protocol traces take no Glass action", () => {
     const deps = makeDeps();
     const handlers = createEchoHandlers(deps);

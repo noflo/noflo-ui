@@ -177,4 +177,75 @@ describe("FlowProjectCorner (work document #9)", () => {
     assert.deepEqual(opens, [{ docId: "b".repeat(32) }]);
     el.remove();
   });
+
+  it("the rngit wires accordion subscribes on open and closes on hide (work document #63)", async () => {
+    const el = makeCorner();
+    el.setWorkDocs(docs());
+    // Pre-seed the bus's ring: the opened accordion hydrates from it
+    const { telemetryBus } = await import("../../src/glass/telemetryBus.js");
+    telemetryBus().publish("rngit", {
+      message: 'created "Design notes"',
+      status: "STAGE",
+      tone: "ok",
+    });
+    const corner = dualShadow(el);
+    const toggle = corner.querySelector('[data-segment-toggle="rngit"]');
+    assert.ok(toggle, "the chip carries the rngit segment");
+    assert.ok(
+      !corner.querySelector(".panel.telemetry"),
+      "closed renders no wires panel",
+    );
+    toggle.dispatchEvent(new Event("click", { bubbles: true }));
+    const panel = el.panelShadow.querySelector(".panel.telemetry");
+    assert.ok(panel, "the segment opens its accordion");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const log = /** @type {any} */ (
+      el.panelShadow.querySelector(".telemetry-slot flow-telemetry-log")
+    );
+    assert.ok(log, "the persistent log element mounted");
+    assert.match(
+      /** @type {any} */ (log).shadowRoot?.textContent ?? "",
+      /created "Design notes"/,
+      "the ring buffer hydrated as history",
+    );
+    // Live traffic flows while open
+    telemetryBus().publish("rngit", {
+      message: 'pushed "Design notes" → board #4',
+      status: "FETCHED",
+      tone: "ok",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.match(
+      /** @type {any} */ (log).shadowRoot?.textContent ?? "",
+      /board #4/,
+      "the live entry rendered",
+    );
+    // Hiding the corner closes the accordion (no live traffic on a hidden
+    // corner) — reopening after traffic shows the accumulated history
+    el.setVisible(false);
+    assert.ok(
+      !el.panelShadow.querySelector(".panel.telemetry"),
+      "hidden closes the wires panel",
+    );
+    telemetryBus().publish("rngit", {
+      message: "board sync failed: link refused",
+      status: "SYNC",
+      tone: "fail",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    el.setVisible(true);
+    el.shadowRoot
+      .querySelector('[data-segment-toggle="rngit"]')
+      .dispatchEvent(new Event("click", { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const reopened = /** @type {any} */ (
+      el.panelShadow.querySelector(".telemetry-slot flow-telemetry-log")
+    );
+    assert.match(
+      /** @type {any} */ (reopened).shadowRoot?.textContent ?? "",
+      /link refused/,
+      "the closed window's entries replay from the ring",
+    );
+    el.remove();
+  });
 });

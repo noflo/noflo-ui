@@ -26,6 +26,23 @@ function formatBytes(bytes) {
 }
 
 /**
+ * Publishes one line of the rngit/materialization log (work document #63's
+ * Project corner tenant): Glass-side transformations of traffic the engine
+ * already sends — the workdoc staging echoes and the materializer's
+ * narration — never a second authority. All sources are the log's own
+ * vocabulary: local staging rides `[ STAGE ]`, board pushes carry the
+ * materializer's action, and the rngit remote rides `[ CONFIG ]`.
+ *
+ * @param {((stream: string, entry: { message: string, status?: string, tone?: "ok" | "fail" | "" }) => void) | undefined} emitTelemetry
+ * @param {string} message
+ * @param {string} status The bracketed status tag.
+ * @param {"ok" | "fail" | ""} [tone]
+ */
+function publishRngit(emitTelemetry, message, status, tone = "ok") {
+  emitTelemetry?.("rngit", { message, status, tone });
+}
+
+/**
  * Everything the echo handlers need from the running Glass.
  *
  * @typedef {Object} EchoHandlerDeps
@@ -155,6 +172,41 @@ export function createEchoHandlers(deps) {
         `[progress] ${phrase} (${data.state})`,
         data.detail ? JSON.stringify(data.detail) : "",
       );
+      // The rngit/materialization log (work document #63): the materializer
+      // narrates its board pushes through this channel — the legible lines
+      // are transformations of traffic the Glass already receives
+      if (
+        data.operation === "workdocs.remote.connect" ||
+        data.operation === "workdocs.materialize"
+      ) {
+        const detail = data.detail ?? {};
+        if (data.operation === "workdocs.remote.connect") {
+          publishRngit(
+            deps.emitTelemetry,
+            `board ${detail.repo ?? ""}`,
+            "CONNECT",
+            data.state === "failed" ? "fail" : "ok",
+          );
+        } else if (data.state === "failed") {
+          publishRngit(
+            deps.emitTelemetry,
+            `board sync failed${detail.error ? `: ${detail.error}` : ""}`,
+            "SYNC",
+            "fail",
+          );
+        } else {
+          const board = detail.board ? ` → board #${detail.board}` : "";
+          const extra = detail.detail ? ` — ${detail.detail}` : "";
+          publishRngit(
+            deps.emitTelemetry,
+            `pushed "${detail.title ?? ""}"${board}${extra}`,
+            String(data.stage ?? "").toUpperCase(),
+            // A skip is the log's fail semantic (the attention color):
+            // the tone vocabulary is ok/fail, and a skip demands notice
+            data.stage === "skipped" ? "fail" : "ok",
+          );
+        }
+      }
       deps.refreshSyncPanel();
     },
     "kind:y-sync": (data) => {
@@ -306,14 +358,29 @@ export function createEchoHandlers(deps) {
       // Work-document echoes (work document #9): the Glass renders from
       // the CRDT mirror; the creation flow navigates to its own document
       deps.workDocCreated?.(data.payload);
+      publishRngit(
+        deps.emitTelemetry,
+        `created "${data.payload?.title ?? data.payload?.id ?? ""}"`,
+        "STAGE",
+      );
       console.debug(`[echo] workdoc/created ${data.payload?.id ?? ""}`);
     },
     "workdoc/updated": (data) => {
+      publishRngit(
+        deps.emitTelemetry,
+        `posted an update on "${data.payload?.id ?? ""}"`,
+        "STAGE",
+      );
       console.debug(
         `[echo] workdoc/updated ${data.payload?.id ?? ""} #${data.payload?.updateId ?? ""}`,
       );
     },
     "workdoc/scoped": (data) => {
+      publishRngit(
+        deps.emitTelemetry,
+        `scope → ${data.payload?.pendingScope ?? ""} ("${data.payload?.id ?? ""}")`,
+        "STAGE",
+      );
       console.debug(
         `[echo] workdoc/scoped ${data.payload?.id ?? ""} → ${data.payload?.pendingScope ?? ""}`,
       );
@@ -335,12 +402,27 @@ export function createEchoHandlers(deps) {
       );
     },
     "workdoc/edited": (data) => {
+      publishRngit(
+        deps.emitTelemetry,
+        `body edited on "${data.payload?.id ?? ""}"`,
+        "STAGE",
+      );
       console.debug(`[echo] workdoc/edited ${data.payload?.id ?? ""}`);
     },
     "workdoc/titled": (data) => {
+      publishRngit(
+        deps.emitTelemetry,
+        `renamed to "${data.payload?.title ?? ""}"`,
+        "STAGE",
+      );
       console.debug(`[echo] workdoc/titled ${data.payload?.id ?? ""}`);
     },
     "workdoc/repo": (data) => {
+      publishRngit(
+        deps.emitTelemetry,
+        `rngit remote ${data.payload?.url || "cleared"}`,
+        "CONFIG",
+      );
       console.debug(`[echo] workdoc/repo ${data.payload?.url ?? "(cleared)"}`);
     },
     "kind:undo": (data) => {
