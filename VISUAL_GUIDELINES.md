@@ -90,7 +90,7 @@ The two themes are not recolorings of one design — they are two designs sharin
 | Age | Lines & rings | Captions & chrome |
 | --- | --- | --- |
 | `abstract` | 8px lines, solid; route hues muted but visible [implemented: the body's age override mutes the wire ink and the per-line diagrams mix the route hue toward the canvas at 70%], unrouted wires in grey ink; outlined discs | Full ink; muted status words |
-| `golden` | Heavier lines (+2px) and filled discs [target] | Bold captions |
+| `golden` | Heavier lines (+2px) and filled discs [implemented: the canvas wires carry +2px under the age — the base renders two under full — the per-line strips' rails and spurs match, and the discs fill through the golden overrides in `main.css`] | Bold captions |
 | `offline` | Grey ink, dashed lines | Muted chrome, dashed input borders |
 | `crashed` | Central-red ring, fracture marks breaking the 8px black ring [target] | Red `Error: …` caption line |
 

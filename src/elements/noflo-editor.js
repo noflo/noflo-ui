@@ -720,6 +720,12 @@ export class FlowEditor extends HTMLElement {
         .state-offline .edge-flow {
           --edge-ink: var(--edge-color);
         }
+        /* The golden age's heavier wires (guidelines §6): the live
+           network's lines carry +2px — the base renders two under full
+           so golden reads as the network being alive, not just colored */
+        .state-golden .edge-flow {
+          stroke-width: calc(var(--edge-width, 4px));
+        }
         /* The contrast casing: hidden everywhere, shown in tube for the
            routes whose stroke cannot hold 3:1 against the white canvas —
            pure or muted (Overground 2.79, Circle 1.44, DLR 3.06,

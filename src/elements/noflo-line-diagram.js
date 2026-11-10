@@ -174,6 +174,15 @@ export class FlowLineDiagram extends HTMLElement {
         :host(.state-crashed) {
           --edge-ink: var(--ui-age-crashed, var(--ui-accent));
         }
+        /* The golden age's heavier rails (guidelines §6): the live
+           network reads +2px on the strip too, the same truth the canvas
+           wires carry */
+        :host(.state-golden) .rail {
+          stroke-width: 7px;
+        }
+        :host(.state-golden) .spur {
+          stroke-width: 5px;
+        }
         .scroll {
           max-height: 60vh;
           overflow-y: auto;
