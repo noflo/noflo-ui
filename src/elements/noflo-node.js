@@ -254,6 +254,18 @@ export class FlowNode extends HTMLElement {
     if (sizeAttr) {
       this.size = parseInt(sizeAttr, 10);
     }
+    // The age rides the host as the state class (guidelines §5, the
+    // exported-port pattern): the node's own rules render age-specific
+    // state — the crashed fracture, the golden glow — from the mirrored
+    // class
+    this._ageObserver = /** @type {any} */ (
+      new MutationObserver(() => this._mirrorAge())
+    );
+    this._ageObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["data-age"],
+    });
+    this._mirrorAge();
     this.render();
     // The expanded state's depiction navigation (work document #5 update
     // #16): delegated on the shadow root so selection-driven re-renders
@@ -304,7 +316,21 @@ export class FlowNode extends HTMLElement {
     this._updateIconFromLibrary();
   }
 
+  /**
+   * Mirrors the body's data-age onto the host as the state-<age> class.
+   */
+  _mirrorAge() {
+    const age = document.body?.getAttribute("data-age") || "abstract";
+    for (const name of ["abstract", "golden", "offline", "crashed"]) {
+      this.classList.toggle(`state-${name}`, name === age);
+    }
+  }
+
   disconnectedCallback() {
+    if (this._ageObserver) {
+      this._ageObserver.disconnect();
+      this._ageObserver = null;
+    }
     if (this._observer) {
       this._observer.disconnect();
     }
@@ -392,6 +418,29 @@ export class FlowNode extends HTMLElement {
           /* The ring stays continuous over the icon and component-name
              bands (work document #5 update #16) */
           z-index: 3;
+        }
+        /* The crashed age's fracture (guidelines §6): the ring breaks —
+           a conic ring in the crashed ink with gap arcs where the crash
+           fractured it, masked to the same band the solid ring drew */
+        :host(.state-crashed) .node-circle::after {
+          border-color: transparent;
+          background: conic-gradient(
+            var(--node-border) 0deg 95deg,
+            transparent 95deg 115deg,
+            var(--node-border) 115deg 205deg,
+            transparent 205deg 230deg,
+            var(--node-border) 230deg 360deg
+          );
+          -webkit-mask: radial-gradient(
+            farthest-side,
+            transparent calc(100% - var(--node-stroke-width, 2px) - 1px),
+            #000 calc(100% - var(--node-stroke-width, 2px))
+          );
+          mask: radial-gradient(
+            farthest-side,
+            transparent calc(100% - var(--node-stroke-width, 2px) - 1px),
+            #000 calc(100% - var(--node-stroke-width, 2px))
+          );
         }
         .node-content {
           position: absolute;

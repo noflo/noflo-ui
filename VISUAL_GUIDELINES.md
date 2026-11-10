@@ -92,7 +92,7 @@ The two themes are not recolorings of one design — they are two designs sharin
 | `abstract` | 8px lines, solid; route hues muted but visible [implemented: the body's age override mutes the wire ink and the per-line diagrams mix the route hue toward the canvas at 70%], unrouted wires in grey ink; outlined discs | Full ink; muted status words |
 | `golden` | Heavier lines (+2px) and filled discs [implemented: the canvas wires carry +2px under the age — the base renders two under full — the per-line strips' rails and spurs match, and the discs fill through the golden overrides in `main.css`] | Bold captions |
 | `offline` | Grey ink, dashed lines | Muted chrome, dashed input borders |
-| `crashed` | Central-red ring, fracture marks breaking the 8px black ring [target] | Red `Error: …` caption line |
+| `crashed` | Central-red ring, fracture marks breaking the 8px black ring [implemented: the node mirrors the body's age as its state class, and the crashed ring renders as a conic ring in the crashed ink with gap arcs where the fracture broke it — the solid ring yields beneath] | Red `Error: …` caption line |
 
 The corner HUD always names the current age, in every theme and age — the subtle channels above never carry the signal alone [target: the corner renders age-colored chips today; the always-present age word lands with work document #28]. The uniform-stroke rule above governs the abstract baseline; the +2px golden weight is its one sanctioned break.
 
