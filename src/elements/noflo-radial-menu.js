@@ -29,6 +29,9 @@ export class FlowRadialMenu extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
+    /** The last text the live region announced — a repeated section
+     * stays silent. */
+    this._announcedText = "";
   }
 
   connectedCallback() {
@@ -121,11 +124,25 @@ export class FlowRadialMenu extends HTMLElement {
           font-family: 'Font Awesome 7 Free';
           font-style: normal;
         }
+        /* The press-and-slide announcement (guidelines §10): visually
+           hidden, screen-reader reach only */
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+        }
       </style>
       <div class="context-menu">
         <svg class="menu-svg"></svg>
         <div class="center-icon"></div>
       </div>
+      <div class="sr-only" role="status" aria-live="assertive"></div>
     `;
     this.menuElement = /** @type {HTMLElement} */ (
       this.shadowRoot.querySelector(".context-menu")
@@ -233,6 +250,11 @@ export class FlowRadialMenu extends HTMLElement {
     }
     this.style.display = "none";
     this._isMenuOpen = false;
+    this._announcedText = "";
+    const region = /** @type {HTMLElement | null} */ (
+      this.shadowRoot?.querySelector(".sr-only")
+    );
+    if (region) region.textContent = "";
     if (this._closeMenuListener) {
       window.removeEventListener("pointerdown", this._closeMenuListener);
       this._closeMenuListener = null;
@@ -418,6 +440,7 @@ export class FlowRadialMenu extends HTMLElement {
       items.forEach((el) => {
         /** @type {HTMLElement} */ (el).classList.remove("highlighted");
       });
+      this._announceHighlight();
       return;
     }
 
@@ -440,11 +463,34 @@ export class FlowRadialMenu extends HTMLElement {
         /** @type {HTMLElement} */ (el).classList.remove("highlighted");
       });
       /** @type {HTMLElement} */ (closestItem).classList.add("highlighted");
+      this._announceHighlight();
     } else {
       items.forEach((el) => {
         /** @type {HTMLElement} */ (el).classList.remove("highlighted");
       });
+      this._announceHighlight();
     }
+  }
+
+  /**
+   * Announces the highlighted item through the live region (guidelines
+   * §10's press-and-slide affordance): a pointer slide has no focus, so
+   * the section under the finger — destructive items especially — is
+   * announced as it highlights, and cleared when nothing is. Only a
+   * change speaks: the same section repeated stays silent.
+   */
+  _announceHighlight() {
+    const region = /** @type {HTMLElement | null} */ (
+      this.shadowRoot?.querySelector(".sr-only")
+    );
+    if (!region) return;
+    const highlighted = /** @type {HTMLElement | null} */ (
+      this.menuElement?.querySelector(".context-menu-item.highlighted")
+    );
+    const text = highlighted?.textContent?.trim() ?? "";
+    if (text === this._announcedText) return;
+    this._announcedText = text;
+    region.textContent = text;
   }
 
   get isOpen() {
