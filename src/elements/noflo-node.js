@@ -878,14 +878,18 @@ export class FlowNode extends HTMLElement {
    * never collide.
    */
   resolveLabelCollisions() {
-    if (!this.portsContainer || !this.hasAttribute("selected")) return;
+    if (!this.portsContainer) return;
     // Pill heights and the breathing room between them: arrayport instance
     // pills of the same port cluster tightly (they are one port), regular
-    // pills keep more air (work document #5 update #16)
-    const regularHeight = 22;
-    const arrayHeight = 16;
+    // pills keep more air (work document #5 update #16). The expanded
+    // state's pills are tall; the non-expanded state's single-line labels
+    // are slim — the fan's offset labels (guidelines \u00a79) need the
+    // same no-overlap pass at both sizes
+    const expanded = this.hasAttribute("selected");
+    const regularHeight = expanded ? 22 : 12;
+    const arrayHeight = expanded ? 16 : 12;
     const clusterGap = 1;
-    const airGap = 6;
+    const airGap = expanded ? 6 : 2;
     for (const direction of ["port-in-label", "port-out-label"]) {
       const labels = [...this.portsContainer.querySelectorAll(`.${direction}`)]
         .map((label) => {
@@ -949,7 +953,13 @@ export class FlowNode extends HTMLElement {
     const highest = attached.length > 0 ? Math.max(...attached) : -1;
     const size = Math.max(3, highest + 2);
 
-    const angleRange = Math.PI * 0.5;
+    // The 44px fan (guidelines \u00a79): when same-side ports crowd the
+    // quarter arc — four or more — the side fans across its full
+    // hemisphere, the arc widening so spacing holds as long as the
+    // radius allows. Above roughly six ports per side at base radius
+    // even the hemisphere compresses below the floor: the node is
+    // expected to be expanded for reliable targeting
+    const angleRange = totalPorts >= 4 ? Math.PI : Math.PI * 0.5;
     const centerAngle = isOutport ? 0 : Math.PI;
     // Both directions read top to bottom in definition order (work
     // document #5): outports start at the upper right and step down;
