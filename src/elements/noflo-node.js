@@ -509,6 +509,13 @@ export class FlowNode extends HTMLElement {
           font-size: calc(var(--node-size, 80px) * 0.4);
         }
 
+        /* The keyboard focus cursor's ring (guidelines §10): the
+           selection construction stays, the ring is the offset outline */
+        :host([data-focused]) {
+          outline: 2px solid var(--ui-focus, rgb(68, 138, 255));
+          outline-offset: 2px;
+        }
+
         :host([selected]) {
           /* The selection pop (work document #5's expanded node): capped
              at ~1.15 — the original 2x doubled the node's hit box past

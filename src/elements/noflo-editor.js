@@ -175,6 +175,10 @@ export class FlowEditor extends HTMLElement {
     this.edgesGroup = null;
     /** @type {HTMLElement | null} */
     this.nodeLayer = null;
+    /** The keyboard focus cursor's node name (guidelines \u00a710's
+     * single-tab-stop model): the arrows move it along the graph's
+     * edges. */
+    this._focusedNodeName = null;
     /** Remote peer drag ghosts, keyed by peer id (work document #21). */
     this.peerGhosts = new Map();
 
@@ -426,6 +430,23 @@ export class FlowEditor extends HTMLElement {
           overflow: hidden;
           user-select: none;
           -webkit-user-select: none;
+        }
+        /* The canvas is the single tab stop (guidelines \u00a710): the
+           arrows move the focus cursor, the ring shows where it rests */
+        #viewport:focus-visible {
+          outline: 2px solid var(--ui-focus, rgb(68, 138, 255));
+          outline-offset: -2px;
+        }
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
         }
         #viewport:active {
           cursor: grabbing;
@@ -761,8 +782,9 @@ export class FlowEditor extends HTMLElement {
           pointer-events: auto;
         }
       </style>
-      <div id="viewport">
+      <div id="viewport" tabindex="0" role="application" aria-label="Graph canvas">
         <noflo-selection-pills></noflo-selection-pills>
+        <div class="sr-only" role="status" aria-live="polite" id="canvas-live"></div>
         <noflo-minimap id="minimap"></noflo-minimap>
         <div id="transform-layer">
           <noflo-heatmap></noflo-heatmap>
@@ -1212,6 +1234,120 @@ export class FlowEditor extends HTMLElement {
    */
   getEdgeId(edge) {
     return /** @type {EdgeManager} */ (this.edgeManager).getEdgeId(edge);
+  }
+
+  /**
+   * The keyboard focus cursor (guidelines \u00a710): sets, clears, and
+   * announces the focused node.
+   *
+   * @param {Element | null} node
+   */
+  _setFocusedNode(node) {
+    const previous = this._focusedNodeElement();
+    if (previous) previous.removeAttribute("data-focused");
+    this._focusedNodeName = node ? (node.getAttribute("name") ?? "") : null;
+    if (node) {
+      node.setAttribute("data-focused", "");
+      const label =
+        /** @type {any} */ (node)?.label ?? node.getAttribute("name") ?? "node";
+      this.announce(`Focused ${label}`);
+    }
+  }
+
+  /**
+   * @returns {Element | null} The focused node element, when it still
+   *   renders.
+   */
+  _focusedNodeElement() {
+    if (!this._focusedNodeName) return null;
+    return (
+      this.nodeLayer?.querySelector(
+        `noflo-node[name="${this._focusedNodeName}"]`,
+      ) ?? null
+    );
+  }
+
+  /**
+   * @param {Element} node
+   * @returns {{ x: number, y: number }} The node's center — its graph
+   *   position where the element carries one (the direction matching is
+   *   scale-invariant, so graph coordinates score identically), the
+   *   rect's center otherwise.
+   */
+  _nodeViewportCenter(node) {
+    const position = /** @type {any} */ (node)?.position;
+    if (position && (position.x !== 0 || position.y !== 0)) {
+      return { x: position.x, y: position.y };
+    }
+    const rect = node.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  }
+
+  /**
+   * Moves the focus cursor one hop along the graph's edges — topology,
+   * not geometry: the next node is the neighbor best aligned with the
+   * pressed direction (guidelines \u00a710).
+   *
+   * @param {{ x: number, y: number }} direction
+   */
+  _moveFocus(direction) {
+    const nodes = [...(this.nodeLayer?.querySelectorAll("noflo-node") ?? [])];
+    if (nodes.length === 0) return;
+    if (!this._focusedNodeName) {
+      this._setFocusedNode(/** @type {Element} */ (nodes[0]));
+      return;
+    }
+    const current = nodes.find(
+      (n) => (n.getAttribute("name") ?? "") === this._focusedNodeName,
+    );
+    if (!current) {
+      this._setFocusedNode(/** @type {Element} */ (nodes[0]));
+      return;
+    }
+    const currentPos = this._nodeViewportCenter(current);
+    /** @type {Element | null} */
+    let best = null;
+    let bestScore = 0;
+    for (const edge of this.edgeManager?.edges ?? []) {
+      for (const port of [edge.portA, edge.portB]) {
+        const host = /** @type {any} */ (port.getRootNode())?.host;
+        if (!host || host.tagName !== "NOFLO-NODE") continue;
+        const hostName = host.getAttribute("name") ?? "";
+        if (hostName !== this._focusedNodeName) continue;
+        const other = edge.portA === port ? edge.portB : edge.portA;
+        const otherHost = /** @type {any} */ (other.getRootNode())?.host;
+        if (!otherHost || otherHost.tagName !== "NOFLO-NODE") continue;
+        if (otherHost.getAttribute("name") === this._focusedNodeName) {
+          continue;
+        }
+        const pos = this._nodeViewportCenter(otherHost);
+        const score =
+          (pos.x - currentPos.x) * direction.x +
+          (pos.y - currentPos.y) * direction.y;
+        if (score > bestScore) {
+          bestScore = score;
+          best = otherHost;
+        }
+      }
+    }
+    if (best) {
+      this._setFocusedNode(best);
+    }
+  }
+
+  /**
+   * The canvas's screen-reader announcements (guidelines \u00a710):
+   * focus moves, selection changes. A repeated message stays silent.
+   *
+   * @param {string} text
+   */
+  announce(text) {
+    const region = /** @type {HTMLElement | null} */ (
+      this.shadowRoot?.querySelector("#canvas-live")
+    );
+    if (!region) return;
+    if (region.textContent === text) return;
+    region.textContent = text;
   }
 
   setupInteractions() {
@@ -1673,6 +1809,64 @@ export class FlowEditor extends HTMLElement {
       this.viewport.addEventListener("contextmenu", (e) => {
         e.preventDefault();
         this.handleContextMenu(e);
+      });
+
+      // The keyboard focus model (guidelines \u00a710): the canvas is the
+      // single tab stop; the arrows move the focus cursor along the
+      // graph's edges — topology, not geometry. Enter toggles the
+      // focused node's selection; the context-menu key opens the radial
+      // at the focused node. Guards: the arrows belong to the canvas
+      // only while it holds focus
+      this.viewport.addEventListener("keydown", (e) => {
+        const focusedHere = document.activeElement === this.viewport;
+        const key = /** @type {KeyboardEvent} */ (e).key;
+        const directions = {
+          ArrowUp: { x: 0, y: -1 },
+          ArrowDown: { x: 0, y: 1 },
+          ArrowLeft: { x: -1, y: 0 },
+          ArrowRight: { x: 1, y: 0 },
+        };
+        if (key === "Escape") {
+          if (this._focusedNodeName) {
+            this._setFocusedNode(null);
+            e.preventDefault();
+          }
+          return;
+        }
+        if (key === "ContextMenu" || (key === "F10" && e.shiftKey)) {
+          const node = this._focusedNodeElement();
+          if (node) {
+            e.preventDefault();
+            const rect = node.getBoundingClientRect();
+            this.showContextMenu(
+              rect.left + rect.width / 2,
+              rect.top + rect.height / 2,
+              {
+                clickedNode: node,
+              },
+            );
+          }
+          return;
+        }
+        if (!focusedHere) return;
+        const direction = /** @type {any} */ (directions)[key];
+        if (direction) {
+          e.preventDefault();
+          this._moveFocus(direction);
+          return;
+        }
+        if (key === "Enter" || key === " ") {
+          const node = this._focusedNodeElement();
+          if (node) {
+            e.preventDefault();
+            const id = node.getAttribute("name") ?? "";
+            this.selectionManager.toggle("nodes", id);
+            this._applySelection(this.selectionManager.getSnapshot());
+            this.announce(
+              `${this.selectionManager.nodes.size} node${this.selectionManager.nodes.size === 1 ? "" : "s"} selected`,
+            );
+          }
+        }
       });
     }
 
