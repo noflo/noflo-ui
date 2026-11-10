@@ -1285,6 +1285,17 @@ export const MESH_COMMANDS = [
  */
 
 /**
+ * The environment age (work documents #30 update #3, #3): the Engine's
+ * computed aggregate over mesh and runtime state, published on
+ * transitions. The Glass only renders it — the body's data-age attribute
+ * is the whole-UI age every age-aware surface already consumes.
+ *
+ * @typedef {Object} EnvironmentAgeEcho
+ * @property {'environment-age'} kind
+ * @property {'abstract' | 'golden' | 'offline' | 'crashed'} age
+ */
+
+/**
  * Dacar authorization state: the project's Trust Anchor, per-grant
  * verification status, and the local wallet's cataloged grants.
  *
@@ -1377,6 +1388,7 @@ export const MESH_COMMANDS = [
  *   | RuntimeTelemetryEcho
  *   | RuntimeSchemasEcho
  *   | RuntimeSchemasWrittenEcho
+ *   | EnvironmentAgeEcho
  *   | MeshTelemetryEcho
  *   | MeshDacarEcho
  *   | MeshInviteEcho
@@ -1437,6 +1449,7 @@ export const ECHO_MESSAGES = [
   { kind: "runtime-telemetry" },
   { kind: "runtime-schemas" },
   { kind: "runtime-schemas-written" },
+  { kind: "environment-age" },
   { kind: "mesh-telemetry" },
   { kind: "mesh-dacar" },
   { kind: "mesh-invite" },

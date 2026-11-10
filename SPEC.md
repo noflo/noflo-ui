@@ -485,6 +485,7 @@ type EngineUIMessage =
   | { kind: 'runtime-op-rejected'; destinationHash: string; rejectedCmd: number | null; detail: any }
   | { kind: 'runtime-schemas'; destinationHash: string; schemas: Array<{ digest: string; body: any }> }
   | { kind: 'runtime-schemas-written'; destinationHash: string; written: number; digests: string[] }
+  | { kind: 'environment-age'; age: 'abstract' | 'golden' | 'offline' | 'crashed' }
   | { kind: 'runtime-telemetry'; destinationHash: string; direction: 'in' | 'out'; message: string; status: 'TX' | 'RX'; time: number; tone?: 'ok' | 'fail' | '' }
   | { kind: 'mesh-telemetry'; category: 'announce' | 'interface' | 'peer'; message: string; status: string; time: number; tone?: 'ok' | 'fail' | ''; detail?: Record<string, any> }
   | { kind: 'mesh-status'; connected?: boolean; synced?: boolean; peers?: number; error?: string }

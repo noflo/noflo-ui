@@ -617,6 +617,12 @@ const echoHandlers = createEchoHandlers({
   emitTelemetry: (stream, entry) => {
     telemetryBus().publish(stream, entry);
   },
+  environmentAge: (age) => {
+    // The Engine's computed aggregate (work documents #30 update #3, #3):
+    // the Glass only renders it — the body's data-age is the whole-UI age
+    // every age-aware surface already mirrors
+    document.body.setAttribute("data-age", age);
+  },
   runtimeSchemasFetched: (_destinationHash, schemas) => {
     for (const { body } of schemas) {
       schemaCache().put(body);

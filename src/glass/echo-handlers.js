@@ -78,6 +78,9 @@ function publishRngit(emitTelemetry, message, status, tone = "ok") {
  * @property {(destinationHash: string, schemas: Array<{ digest: string, body: any }>) => void} [runtimeSchemasFetched]
  *   The runtime-schemas echo arrived (work document #57): the Glass's
  *   schema cache ingests the digest-verified bodies.
+ * @property {(age: string) => void} [environmentAge] The Engine's
+ *   computed environment age arrived (work documents #30 update #3, #3):
+ *   the Glass renders it — the body's data-age attribute.
  * @property {(destinationHash: string, digests: string[]) => void} [runtimeSchemasWritten]
  *   The runtime-schemas-written echo arrived (work document #57's write
  *   direction): the digests that actually went out over `0x2a`.
@@ -321,6 +324,12 @@ export function createEchoHandlers(deps) {
       // The digest-verified bodies (work document #57): the Glass's
       // schema cache ingests — foreign pins resolve from here onward
       deps.runtimeSchemasFetched?.(data.destinationHash, data.schemas ?? []);
+    },
+    "kind:environment-age": (data) => {
+      // The Engine's computed aggregate (work documents #30 update #3,
+      // #3): the Glass only renders it — the body's data-age is the
+      // whole-UI age every age-aware surface already consumes
+      deps.environmentAge?.(data.age);
     },
     "kind:runtime-schemas-written": (data) => {
       // The write direction's honest record (work document #57): the

@@ -45,6 +45,7 @@ import { listNofloDatabases, performFactoryReset } from "./FactoryReset.js";
 import { attachInterfaces } from "./interfaces.js";
 import { createMeshSync } from "./MeshSync.js";
 import { progress } from "./Progress.js";
+import { createEnvironmentAge } from "./EnvironmentAge.js";
 import { RngitTransport } from "./RngitTransport.js";
 import { createRuntimeBridge } from "./RuntimeBridge.js";
 import { WorkDocMaterializer } from "./WorkDocMaterializer.js";
@@ -86,6 +87,22 @@ export async function startEngine(io, options = {}) {
   // operations with the first-party RFC 7748 implementation. No-op on
   // runtimes with full support.
   await probeX25519Support();
+  // The environment age (work documents #30 update #3, #3): the Engine
+  // computes the aggregate from its own echo stream — mesh state,
+  // runtime connections and run states — and publishes it on
+  // transitions. The Glass only renders it; every Engine → Glass echo
+  // funnels through this one seam
+  const environmentAge = createEnvironmentAge();
+  const rawPostMessage = io.postMessage.bind(io);
+  let lastAge = /** @type {string | null} */ (null);
+  io.postMessage = (/** @type {any} */ message) => {
+    const age = environmentAge.absorb(message);
+    if (age !== lastAge) {
+      lastAge = age;
+      rawPostMessage({ kind: "environment-age", age });
+    }
+    rawPostMessage(message);
+  };
   // Project-scoped persistence (work document #21): the device keeps an
   // active-project pointer in its engine-owned storage; the project document
   // loads from and persists to its own IndexedDB store keyed by the project
