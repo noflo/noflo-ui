@@ -153,8 +153,10 @@ export class FileSelector extends HTMLElement {
           border-bottom: 1px solid var(--ui-border);
         }
 
-        #file-list li:hover {
-          background-color: color-mix(in srgb, var(--ui-accent) 12%, transparent);
+        @media (hover: hover) {
+          #file-list li:hover {
+            background-color: color-mix(in srgb, var(--ui-accent) 12%, transparent);
+          }
         }
 
         #file-list li:focus-visible {

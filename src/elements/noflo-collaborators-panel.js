@@ -471,8 +471,10 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           text-decoration: underline dotted;
           text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
         }
-        .avatar-name.editable:hover {
-          color: var(--ui-accent, rgb(90, 200, 250));
+        @media (hover: hover) {
+          .avatar-name.editable:hover {
+            color: var(--ui-accent, rgb(90, 200, 250));
+          }
         }
         .fa {
           font-family: "Font Awesome 7 Free";

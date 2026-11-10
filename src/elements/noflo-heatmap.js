@@ -39,6 +39,9 @@ export class FlowHeatmap extends HTMLElement {
     /** @type {number | null} */
     /** @type { ReturnType<typeof setTimeout> | null } */
     this.intervalId = null;
+    /** @type {(() => void) | null} The visibilitychange listener: the
+     * ambient tick pauses while the page hides (guidelines §13). */
+    this._visibilityListener = null;
   }
 
   connectedCallback() {
@@ -50,6 +53,13 @@ export class FlowHeatmap extends HTMLElement {
     if (this.intervalId !== null) {
       clearInterval(this.intervalId);
       this.intervalId = null;
+    }
+    if (this._visibilityListener) {
+      document.removeEventListener(
+        "visibilitychange",
+        this._visibilityListener,
+      );
+      this._visibilityListener = null;
     }
   }
 
@@ -84,6 +94,20 @@ export class FlowHeatmap extends HTMLElement {
       () => this._renderFrame(),
       FlowHeatmap.TICK_MS,
     );
+    // The ambient tick pauses when the page hides (guidelines §13): a
+    // backgrounded editor burns no battery on decay frames nobody sees;
+    // visibility resumes it
+    this._visibilityListener = () => {
+      if (document.hidden) {
+        if (this.intervalId !== null) {
+          clearInterval(this.intervalId);
+          this.intervalId = null;
+        }
+      } else if (this.intervalId === null) {
+        this.startLoop();
+      }
+    };
+    document.addEventListener("visibilitychange", this._visibilityListener);
   }
 
   /** @private */

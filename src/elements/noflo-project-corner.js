@@ -137,9 +137,13 @@ export class FlowProjectCorner extends FlowCornerElement {
           cursor: pointer;
           border-radius: var(--ui-radius, 6px);
         }
-        .doc-row:hover,
         .doc-row.active-doc {
           background: color-mix(in srgb, var(--ui-accent, rgb(90, 200, 250)) 12%, transparent);
+        }
+        @media (hover: hover) {
+          .doc-row:hover {
+            background: color-mix(in srgb, var(--ui-accent, rgb(90, 200, 250)) 12%, transparent);
+          }
         }
         .doc-row.active-doc .doc-title {
           color: var(--ui-accent, rgb(90, 200, 250));
@@ -284,7 +288,7 @@ export class FlowProjectCorner extends FlowCornerElement {
         <div class="empty">No work documents yet.</div>
         <button class="secondary" data-action="create-doc">New document</button>
         <div class="row">
-          <input id="rngit-remote" placeholder="rns://<hash>/<group>/<repo>" value="${escapeHtml(
+          <input id="rngit-remote" placeholder="rns://<hash>/<group>/<repo>" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" value="${escapeHtml(
             this._rngitRemote ?? "",
           )}">
           <button data-action="save-remote">Set rngit remote</button>

@@ -122,8 +122,10 @@ export class NofloIconPicker extends HTMLElement {
           color: inherit;
           cursor: pointer;
         }
-        .glyph:hover {
-          border-color: var(--ui-accent, rgb(90, 200, 250));
+        @media (hover: hover) {
+          .glyph:hover {
+            border-color: var(--ui-accent, rgb(90, 200, 250));
+          }
         }
         .glyph.picked {
           border-color: var(--ui-accent, rgb(90, 200, 250));

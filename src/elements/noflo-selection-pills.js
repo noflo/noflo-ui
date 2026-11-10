@@ -148,9 +148,11 @@ export class SelectionPills extends HTMLElement {
           transition: background 0.2s;
           color: var(--node-text);
         }
-        .selection-pill .clear-btn:hover {
-          background: var(--ui-age-attention, #ff4444);
-          color: white;
+        @media (hover: hover) {
+          .selection-pill .clear-btn:hover {
+            background: var(--ui-age-attention, #ff4444);
+            color: white;
+          }
         }
         .selection-pill .clear-btn:focus-visible {
           background: var(--ui-age-attention, #ff4444);

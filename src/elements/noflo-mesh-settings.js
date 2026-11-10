@@ -248,7 +248,7 @@ export class FlowMeshSettings extends HTMLElement {
     const owner = this._dacarState?.anchor?.owner === true;
     const disabled = owner ? "" : "disabled";
     return `<div class="row" style="margin-top: 8px">
-          <input id="new-grant-peer" placeholder="peer identity hash" ${disabled}>
+          <input id="new-grant-peer" placeholder="peer identity hash" autocapitalize="off" autocorrect="off" spellcheck="false" ${disabled}>
           <select id="new-grant-role" ${disabled}>
             <option value="observer">Observer</option>
             <option value="operator">Operator</option>

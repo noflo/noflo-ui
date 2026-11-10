@@ -329,8 +329,13 @@ export class FlowContextChip extends FlowCornerElement {
           box-sizing: border-box;
           cursor: pointer;
         }
-        .tree-row:hover, .tree-row:focus-visible {
+        .tree-row:focus-visible {
           background: color-mix(in srgb, var(--ui-accent, #4aa3df) 12%, transparent);
+        }
+        @media (hover: hover) {
+          .tree-row:hover {
+            background: color-mix(in srgb, var(--ui-accent, #4aa3df) 12%, transparent);
+          }
         }
         .tree-entry.active .tree-row {
           background: color-mix(in srgb, var(--ui-accent, #4aa3df) 20%, transparent);

@@ -305,12 +305,14 @@ export class FlowLineDiagram extends HTMLElement {
         .hit {
           cursor: pointer;
         }
-        .hit:hover .tick,
-        .hit:hover .terminus-ring {
-          stroke-width: 5px;
-        }
-        .hit:hover .rail {
-          stroke-width: 7px;
+        @media (hover: hover) {
+          .hit:hover .tick,
+          .hit:hover .terminus-ring {
+            stroke-width: 5px;
+          }
+          .hit:hover .rail {
+            stroke-width: 7px;
+          }
         }
         .hit circle {
           transition: stroke-width 0.1s ease;

@@ -21,6 +21,16 @@ html {
      it, so every surface follows the theme */
   color: var(--node-text);
   background: var(--ui-bg);
+  /* The editor is a canvas app: the shell never rubber-bands, and OS
+     gestures keep their system meaning (guidelines §13) */
+  overscroll-behavior: none;
+  /* Native scrollbars and form controls follow the theme (guidelines
+     §13) */
+  color-scheme: dark;
+}
+[data-theme="tube"],
+[data-theme="tube"] body {
+  color-scheme: light;
 }
 #app {
   width: 100%;
@@ -87,18 +97,22 @@ button:focus-visible {
   outline: 2px solid var(--ui-focus);
   outline-offset: 2px;
 }
-button:hover {
-  background: var(--ui-accent);
-  color: var(--ui-bg);
+@media (hover: hover) {
+  button:hover {
+    background: var(--ui-accent);
+    color: var(--ui-bg);
+  }
 }
 [data-theme="tube"] button {
   border: 2px solid black;
   border-radius: 0;
   font-weight: bold;
 }
-[data-theme="tube"] button:hover {
-  background: black;
-  color: white;
+@media (hover: hover) {
+  [data-theme="tube"] button:hover {
+    background: black;
+    color: white;
+  }
 }
 .btn-age {
   font-weight: bold;

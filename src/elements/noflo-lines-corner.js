@@ -244,8 +244,10 @@ export class FlowLinesCorner extends FlowCornerElement {
       cursor: pointer;
       color: var(--node-text, inherit);
     }
-    .list-item:hover {
-      border-color: var(--ui-accent, rgb(0, 229, 255));
+    @media (hover: hover) {
+      .list-item:hover {
+        border-color: var(--ui-accent, rgb(0, 229, 255));
+      }
     }
     .list-item .grow {
       flex: 1;

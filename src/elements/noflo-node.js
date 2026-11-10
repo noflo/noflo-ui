@@ -531,10 +531,12 @@ export class FlowNode extends HTMLElement {
         :host([selected]) .node-icon-img {
           width: calc(var(--node-size, 80px) * 0.18);
         }
-        .node-depiction.openable:hover {
-          box-shadow:
-            inset 0 0 0 2px var(--ui-accent),
-            0 0 12px color-mix(in srgb, var(--ui-accent) 40%, transparent);
+        @media (hover: hover) {
+          .node-depiction.openable:hover {
+            box-shadow:
+              inset 0 0 0 2px var(--ui-accent),
+              0 0 12px color-mix(in srgb, var(--ui-accent) 40%, transparent);
+          }
         }
         .depiction-node {
           fill: var(--node-text);
@@ -751,9 +753,11 @@ export class FlowNode extends HTMLElement {
           z-index: 2;
           transition: opacity 0.2s;
         }
-        .port:hover {
-          background-color: var(--ui-accent);
-          transform: scale(1.2);
+        @media (hover: hover) {
+          .port:hover {
+            background-color: var(--ui-accent);
+            transform: scale(1.2);
+          }
         }
         .port-compatible {
           background-color: var(--ui-accent) !important;

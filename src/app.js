@@ -2722,10 +2722,15 @@ function applyAppearance() {
   } catch {
     theme = null;
   }
-  document.body.setAttribute(
-    "data-theme",
-    theme === "cyberpunk" || theme === "tube" ? theme : "tube",
-  );
+  // The user's choice when they made one; otherwise the platform's
+  // scheme decides (guidelines §13): the dark glass to a dark system,
+  // the light map to a light one
+  if (theme !== "cyberpunk" && theme !== "tube") {
+    theme = window.matchMedia?.("(prefers-color-scheme: dark)").matches
+      ? "cyberpunk"
+      : "tube";
+  }
+  document.body.setAttribute("data-theme", theme);
   document.body.setAttribute("data-age", "abstract");
 }
 

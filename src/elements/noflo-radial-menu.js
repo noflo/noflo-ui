@@ -105,12 +105,22 @@ export class FlowRadialMenu extends HTMLElement {
           z-index: 1;
           border: 1px solid transparent;
         }
-        .context-menu-item:hover,
+        /* Hover enhances pointer devices only (guidelines §13): touch
+           highlights through the slide, so the highlighted state is
+           unconditional and :hover is media-wrapped */
         .context-menu-item.highlighted {
           background: var(--ui-accent);
           color: var(--ui-bg);
           transform: scale(1.1);
           box-shadow: 0 0 15px var(--ui-accent);
+        }
+        @media (hover: hover) {
+          .context-menu-item:hover {
+            background: var(--ui-accent);
+            color: var(--ui-bg);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px var(--ui-accent);
+          }
         }
         .context-menu-item i {
           font-size: 20px;
