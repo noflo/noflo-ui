@@ -210,3 +210,68 @@ describe("the radial menu's submenu split (guidelines §10)", () => {
     el.remove();
   });
 });
+
+describe("the radial's left-handed mirror (guidelines §10)", () => {
+  it("left-handed mode mirrors the sections across the vertical axis", () => {
+    document.body.setAttribute("data-handedness", "left");
+    const el = makeMenu();
+    // Remove is section 3 (the right-handed bottom-left): mirrored to
+    // section 1 — the bottom-right quadrant
+    el.open(
+      200,
+      200,
+      [
+        { text: "Remove", onClick: () => {} },
+        { text: "Add Node", onClick: () => {} },
+      ],
+      "gear",
+    );
+    const remove = [
+      ...el.shadowRoot.querySelectorAll(".context-menu-item"),
+    ].find(
+      (/** @type {HTMLElement} */ i) =>
+        i.querySelector("span")?.textContent === "Remove",
+    );
+    assert.ok(remove, "the item renders");
+    const left = Number.parseFloat(remove.style.left);
+    // The mirrored item sits right of the origin (the menu's 180px box):
+    // the right-handed bottom-left would render left of center
+    // The item's CENTER sits right of the origin (the box's left edge is
+    // the center minus half the 60px box)
+    assert.ok(
+      left > 60,
+      `the mirrored section renders right of the origin (center ${left + 30})`,
+    );
+    // The slide matches through the same mirror: sliding to the item's
+    // rendered position highlights it
+    // The slide works in the menu box's coordinates: the origin is the
+    // box's center (90, 90)
+    const dx = Number.parseFloat(remove.style.left) + 30 - 90;
+    const dy = Number.parseFloat(remove.style.top) + 30 - 90;
+    el.handleSlide({ clientX: el._openX + dx, clientY: el._openY + dy });
+    assert.ok(
+      remove.classList.contains("highlighted"),
+      "the slide finds the mirrored item",
+    );
+    document.body.setAttribute("data-handedness", "right");
+    el.remove();
+  });
+
+  it("right-handed mode stays the default", () => {
+    document.body.removeAttribute("data-handedness");
+    const el = makeMenu();
+    el.open(200, 200, [{ text: "Remove", onClick: () => {} }], "gear");
+    const remove = [
+      ...el.shadowRoot.querySelectorAll(".context-menu-item"),
+    ].find(
+      (/** @type {HTMLElement} */ i) =>
+        i.querySelector("span")?.textContent === "Remove",
+    );
+    const left = Number.parseFloat(remove.style.left);
+    assert.ok(
+      left <= 90,
+      `the right-handed section renders left of the origin (${left})`,
+    );
+    el.remove();
+  });
+});

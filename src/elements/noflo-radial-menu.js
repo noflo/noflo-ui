@@ -339,6 +339,10 @@ export class FlowRadialMenu extends HTMLElement {
     // overflow as its own menu, the center icon turning back.
     const CAP = 2;
 
+    // Left-handed mode mirrors the map horizontally (guidelines \u00a710):
+    // section n renders at (4 \u2212 n) mod 8 \u2014 the finger-free zone
+    // moves to the other hand. The mirror is the class method
+    // _mirrorSection, shared with the slide matcher
     /** @type {Array<{ item: any, angle: number, radius: number }>} */
     const placed = [];
     const perSection = new Map();
@@ -356,8 +360,10 @@ export class FlowRadialMenu extends HTMLElement {
     let overflow = [];
     for (const item of this._items) {
       const section = ITEM_SECTION_MAP[item.text];
-      if (section !== undefined && (perSection.get(section) ?? 0) < CAP) {
-        assign(item, section);
+      const home =
+        section === undefined ? undefined : this._mirrorSection(section);
+      if (home !== undefined && (perSection.get(home) ?? 0) < CAP) {
+        assign(item, home);
       } else {
         overflow.push(item);
       }
@@ -372,8 +378,9 @@ export class FlowRadialMenu extends HTMLElement {
     for (const item of overflow) {
       let home = null;
       for (let i = 0; i < availableSections.length; i++) {
-        const section =
-          availableSections[(availIdx + i) % availableSections.length];
+        const section = this._mirrorSection(
+          availableSections[(availIdx + i) % availableSections.length],
+        );
         if ((perSection.get(section) ?? 0) < CAP) {
           home = section;
           availIdx = (availIdx + i + 1) % availableSections.length;
@@ -389,11 +396,12 @@ export class FlowRadialMenu extends HTMLElement {
     overflow = still;
     if (overflow.length > 0) {
       // The submenu slot: the section with room, deepest from the finger
-      // zone first
-      let section = 7;
+      // zone first (mirrored like every placement)
+      let section = this._mirrorSection(7);
       for (const candidate of [7, 6, 5, 4, 3]) {
-        if ((perSection.get(candidate) ?? 0) < CAP) {
-          section = candidate;
+        const mirrored = this._mirrorSection(candidate);
+        if ((perSection.get(mirrored) ?? 0) < CAP) {
+          section = mirrored;
           break;
         }
       }
@@ -530,6 +538,21 @@ export class FlowRadialMenu extends HTMLElement {
   }
 
   /**
+   * The section's rendered position: left-handed mode mirrors the map
+   * horizontally — section n renders at (4 \u2212 n) mod 8
+   * (right\u2194left, bottom-right\u2194bottom-left, top and bottom
+   * fixed) — moving the finger-free zone to the other hand.
+   *
+   * @param {number} section
+   * @returns {number}
+   */
+  _mirrorSection(section) {
+    return document.body?.getAttribute("data-handedness") === "left"
+      ? (((4 - section) % 8) + 8) % 8
+      : section;
+  }
+
+  /**
    * @param {PointerEvent} e
    */
   handleSlide(e) {
@@ -558,7 +581,9 @@ export class FlowRadialMenu extends HTMLElement {
       return;
     }
 
-    // Map angle to 45-degree section (0-7)
+    // Map angle to 45-degree section (0-7): the matcher works in
+    // rendered space \u2014 the items live at their mirrored angles in
+    // left-handed mode, so the raw angle already addresses them
     const section = Math.floor(angle / (Math.PI / 4));
 
     let closestItem = null;

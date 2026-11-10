@@ -208,6 +208,10 @@
  *   The guide reader's dismissal (work document #66)
  * @property {CustomEvent<{ nodeId: string, component: string, edgeId: string, src: any, tgt: any, x: number, y: number }>} node-splice-attempt
  * @property {CustomEvent<{ theme: string }>} appearance-theme
+ * @property {CustomEvent<{ handedness: string }>} appearance-handedness
+ *   The handedness preference changed (guidelines §1, §10): the shell
+ *   applies and remembers it — the radial's mirror reads the body's
+ *   data-handedness.
  * @property {CustomEvent<void>} mesh-close
  * @property {CustomEvent<{ config: any }>} mesh-configure
  * @property {CustomEvent<{ peerHash: string, role: string }>} mesh-grant

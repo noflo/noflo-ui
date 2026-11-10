@@ -66,6 +66,10 @@ export class FlowMeshSettings extends HTMLElement {
     /** Dacar state reported by the Engine (`mesh-dacar` messages). */
     this._dacarState = /** @type {any} */ (null);
     this._identityHash = "";
+    /** The device-local handedness preference (guidelines §1, §10): the
+     * radial's mirror reads the body's data-handedness. */
+    /** @type {"left" | "right"} */
+    this._handedness = "right";
     /** JSON Schemas per interface type, from the Engine's mesh-config. */
     this._grantInterfaces = /** @type {{ [type: string]: any }} */ ({});
     /** Interfaces the mesh layer attached by default (read-only in the
@@ -332,6 +336,10 @@ export class FlowMeshSettings extends HTMLElement {
     const config = this._config;
     const editable = Boolean(config);
     this._currentTheme = document.body.getAttribute("data-theme") ?? "tube";
+    this._handedness =
+      document.body.getAttribute("data-handedness") === "left"
+        ? "left"
+        : "right";
     const formStyles = this._formStyles ?? "";
     this._renderedFormStyles = formStyles;
     const interfaces = config?.interfaces ?? [];
@@ -478,6 +486,9 @@ export class FlowMeshSettings extends HTMLElement {
         <div class="row" style="margin-top: 6px">
           <button class="secondary" data-action="theme-dark" ${this._currentTheme === "cyberpunk" ? "disabled" : ""}>Dark</button>
           <button class="secondary" data-action="theme-light" ${this._currentTheme === "tube" ? "disabled" : ""}>Light</button>
+          <!-- Handedness (guidelines \u00a71, \u00a710): the device-local
+               preference the radial's mirror reads -->
+          <button class="secondary" data-action="handedness" title="Mirror the radial menus for the other hand">${this._handedness === "left" ? "Left-handed" : "Right-handed"}</button>
         </div>
 
         ${
@@ -630,6 +641,20 @@ export class FlowMeshSettings extends HTMLElement {
           emit(this, "appearance-theme", { theme }, { composed: false });
         });
     }
+
+    shadow
+      .querySelector("[data-action='handedness']")
+      ?.addEventListener("click", () => {
+        const handedness = this._handedness === "left" ? "right" : "left";
+        this._handedness = handedness;
+        emit(
+          this,
+          "appearance-handedness",
+          { handedness },
+          { composed: false },
+        );
+        this.render();
+      });
 
     const enabled = /** @type {HTMLInputElement | null} */ (
       shadow.querySelector("#mesh-enabled")

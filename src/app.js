@@ -2704,6 +2704,29 @@ function parseIIPValue(raw) {
   }
 }
 
+/**
+ * Applies the handedness preference (guidelines \u00a71, \u00a710): the
+ * radial's mirror reads the body's data-handedness; device-local, like
+ * the theme.
+ *
+ * @param {string} handedness
+ */
+function applyHandedness(handedness) {
+  document.body.setAttribute(
+    "data-handedness",
+    handedness === "left" ? "left" : "right",
+  );
+  try {
+    localStorage.setItem(
+      "noflo.handedness",
+      handedness === "left" ? "left" : "right",
+    );
+  } catch {
+    // Storage may be unavailable (privacy mode); the choice then lasts
+    // for the session only
+  }
+}
+
 /** @param {string} theme */
 function applyTheme(theme) {
   document.body.setAttribute("data-theme", theme);
@@ -2855,6 +2878,13 @@ function activateScreen(
 
 async function init() {
   applyAppearance();
+  // The handedness preference rides the same boot: the remembered
+  // choice, else right (the default)
+  try {
+    applyHandedness(localStorage.getItem("noflo.handedness") ?? "right");
+  } catch {
+    applyHandedness("right");
+  }
   trackInputState();
   // The screen registry (work document #64): the full-screen views
   // register once — the activation closes every other registered
@@ -3636,12 +3666,18 @@ async function init() {
   // Appearance (work document #5 follow-up): the theme is a device
   // preference — applied, remembered on this device, and synced across
   // the device's tabs
+  on(settingsDialog, "appearance-handedness", (e) => {
+    applyHandedness(e.detail.handedness);
+  });
   on(settingsDialog, "appearance-theme", (e) => {
     applyTheme(e.detail.theme);
   });
   window.addEventListener("storage", (event) => {
     if (event.key === "noflo.theme" && event.newValue) {
       applyTheme(event.newValue);
+    }
+    if (event.key === "noflo.handedness" && event.newValue) {
+      applyHandedness(event.newValue);
     }
   });
 
