@@ -32,6 +32,16 @@ export class FlowRadialMenu extends HTMLElement {
     /** The last text the live region announced — a repeated section
      * stays silent. */
     this._announcedText = "";
+    /** The open menu's center icon name, for the submenu's back
+     * restore. */
+    this._centerIconName = null;
+    /** Submenu state: the parent's items and center icon while a
+     * submenu is open (guidelines §10's submenu split). */
+    this._submenuOf = false;
+    /** @type {any[] | null} */
+    this._parentItems = null;
+    /** @type {string | null} */
+    this._parentCenterIcon = null;
   }
 
   connectedCallback() {
@@ -175,6 +185,7 @@ export class FlowRadialMenu extends HTMLElement {
     this._openX = x;
     this._openY = y;
     this._items = items;
+    this._centerIconName = centerIcon;
     this.render(); // Reset HTML
     this.menuElement = /** @type {HTMLElement} */ (
       this.shadowRoot?.querySelector(".context-menu")
@@ -221,7 +232,19 @@ export class FlowRadialMenu extends HTMLElement {
     window.addEventListener("pointermove", this._moveMenuListener);
 
     /** @type {EventListener | null} */
-    this._releaseMenuListener = (_e) => {
+    this._releaseMenuListener = (e) => {
+      // A submenu's release in the finger-free center navigates back to
+      // the parent menu — the same gesture vocabulary, one level up
+      if (this._submenuOf && e instanceof PointerEvent) {
+        const dist = Math.hypot(
+          e.clientX - this._openX,
+          e.clientY - this._openY,
+        );
+        if (dist < 22) {
+          this._backToParent();
+          return;
+        }
+      }
       const menu = this.menuElement;
       const highlighted = /** @type {HTMLElement} */ (
         menu?.querySelector(".context-menu-item.highlighted")
@@ -284,7 +307,6 @@ export class FlowRadialMenu extends HTMLElement {
     const count = this._items.length;
     if (count === 0) return;
 
-    const radius = 60;
     const centerX = 90;
     const centerY = 90;
 
@@ -311,54 +333,89 @@ export class FlowRadialMenu extends HTMLElement {
       "Group selection": 5,
     };
 
-    // The per-item geometry: the section anchors the angle; items that
-    // share a section stagger outward so their 60px hit areas never
-    // overlap — the collision layout used to be random, which let menu
-    // items stack on top of each other and swallow each other's clicks
-    // (the interception the smoke layer caught)
-    /** @type {Array<{ angle: number, radius: number }>} */
-    const geometry = new Array(count);
-    const perSection = new Map();
+    // The submenu split (guidelines §10): a section holds two staggered
+    // items at most — the third collapses into one submenu slot instead
+    // of a third ring marching off-screen. The submenu carries the
+    // overflow as its own menu, the center icon turning back.
+    const CAP = 2;
 
-    const assign = (
-      /** @type {number} */ index,
-      /** @type {number} */ section,
-    ) => {
+    /** @type {Array<{ item: any, angle: number, radius: number }>} */
+    const placed = [];
+    const perSection = new Map();
+    const assign = (/** @type {any} */ item, /** @type {number} */ section) => {
       const used = perSection.get(section) ?? 0;
       perSection.set(section, used + 1);
-      geometry[index] = {
+      placed.push({
+        item,
         angle: (section + 0.5) * (Math.PI / 4),
         radius: used === 0 ? 60 : 60 + 55 * used,
-      };
+      });
     };
 
-    // First pass: assigned sections
-    this._items.forEach((item, index) => {
+    /** @type {any[]} */
+    let overflow = [];
+    for (const item of this._items) {
       const section = ITEM_SECTION_MAP[item.text];
-      if (section !== undefined) assign(index, section);
-    });
-
-    // Second pass: fill remaining items into the free sections,
-    // deterministically — we leave the bottom-right sections empty
+      if (section !== undefined && (perSection.get(section) ?? 0) < CAP) {
+        assign(item, section);
+      } else {
+        overflow.push(item);
+      }
+    }
+    // Unmapped and over-cap items fill the free sections' remaining
+    // stagger — deterministically, the bottom-right sections empty
     // because fingers cover those on touch
     const availableSections = [3, 4, 5, 6, 7];
     let availIdx = 0;
-    this._items.forEach((item, index) => {
-      if (geometry[index]) return;
-      const section = availableSections[availIdx % availableSections.length];
-      availIdx++;
-      assign(index, section);
-    });
-
-    const itemAngles = geometry.map((g) => g.angle);
-    const itemRadii = geometry.map((g) => g.radius);
+    /** @type {any[]} */
+    const still = [];
+    for (const item of overflow) {
+      let home = null;
+      for (let i = 0; i < availableSections.length; i++) {
+        const section =
+          availableSections[(availIdx + i) % availableSections.length];
+        if ((perSection.get(section) ?? 0) < CAP) {
+          home = section;
+          availIdx = (availIdx + i + 1) % availableSections.length;
+          break;
+        }
+      }
+      if (home === null) {
+        still.push(item);
+        continue;
+      }
+      assign(item, home);
+    }
+    overflow = still;
+    if (overflow.length > 0) {
+      // The submenu slot: the section with room, deepest from the finger
+      // zone first
+      let section = 7;
+      for (const candidate of [7, 6, 5, 4, 3]) {
+        if ((perSection.get(candidate) ?? 0) < CAP) {
+          section = candidate;
+          break;
+        }
+      }
+      assign(
+        {
+          text: `More (${overflow.length})`,
+          icon: "chevron-right",
+          // The submenu slot's activation swaps the menu's content —
+          // the close() in the release handler must not strip the
+          // submenu's fresh gesture listeners
+          staysOpen: true,
+          onClick: () => this._openSubmenu(overflow),
+        },
+        section,
+      );
+    }
 
     if (this.svgElement) {
       this.svgElement.innerHTML = "";
     }
 
-    this._items.forEach((item, index) => {
-      const angle = itemAngles[index];
+    for (const { item, angle, radius } of placed) {
       const section = Math.floor(angle / (Math.PI / 4));
       const startAngle = section * (Math.PI / 4);
       const endAngle = (section + 1) * (Math.PI / 4);
@@ -406,23 +463,70 @@ export class FlowRadialMenu extends HTMLElement {
       });
       el.addEventListener("pointerup", (e) => {
         e.stopPropagation();
+        // A submenu slot swaps the content instead of closing — its
+        // open() arms the fresh gesture listeners this close would strip
+        if (!item.staysOpen) this.close();
         item.onClick();
-        this.close();
       });
 
       if (this.menuElement) {
         this.menuElement.appendChild(el);
       }
 
-      const itemRadius = itemRadii[index];
-      const x = centerX + itemRadius * Math.cos(angle) - 30;
-      const y = centerY + itemRadius * Math.sin(angle) - 30;
+      const x = centerX + radius * Math.cos(angle) - 30;
+      const y = centerY + radius * Math.sin(angle) - 30;
 
       el.style.left = `${x}px`;
       el.style.top = `${y}px`;
       /** @type {any} */ (el)._angle = angle;
       /** @type {any} */ (el)._item = item;
-    });
+    }
+  }
+
+  /**
+   * Opens the overflow items as a submenu at the same origin: the
+   * parent's items restore through the center-release gesture, and the
+   * center icon turns the back chevron.
+   *
+   * @param {any[]} items
+   */
+  _openSubmenu(items) {
+    this._parentItems = this._items;
+    this._parentCenterIcon = this._centerIconName ?? null;
+    this._submenuOf = true;
+    // The reopen must not stack the gesture listeners: tear the previous
+    // gesture's wiring down first (close() also hides — not wanted here)
+    this._teardownGesture();
+    this.open(this._openX, this._openY, items, "chevron-left");
+  }
+
+  /**
+   * Restores the parent menu (the center-release gesture's job).
+   */
+  _backToParent() {
+    const parent = this._parentItems ?? [];
+    const icon = this._parentCenterIcon;
+    this._submenuOf = false;
+    this._parentItems = null;
+    this._parentCenterIcon = null;
+    this._teardownGesture();
+    this.open(this._openX, this._openY, parent, icon);
+  }
+
+  /**
+   * Removes the gesture listeners without hiding the menu — the reopen
+   * paths' teardown (close() hides as well).
+   */
+  _teardownGesture() {
+    if (this._moveMenuListener) {
+      window.removeEventListener("pointermove", this._moveMenuListener);
+      this._moveMenuListener = null;
+    }
+    if (this._releaseMenuListener) {
+      window.removeEventListener("pointerup", this._releaseMenuListener);
+      window.removeEventListener("pointercancel", this._releaseMenuListener);
+      this._releaseMenuListener = null;
+    }
   }
 
   /**
