@@ -369,7 +369,8 @@ export class FlowMeshSettings extends HTMLElement {
           border: 1px solid var(--ui-border);
           border-radius: 4px;
           padding: 4px 8px;
-          font-size: 13px;
+          /* The 16px floor (guidelines \u00a713): no iOS focus zoom */
+          font-size: 16px;
           width: 100%;
           box-sizing: border-box;
           min-height: var(--ui-target, 44px);

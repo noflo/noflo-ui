@@ -681,8 +681,8 @@ export class FlowSyncPanel extends FlowCornerElement {
     return `
         :host {
           position: fixed;
-          bottom: 12px;
-          right: 12px;
+          bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+          right: calc(12px + env(safe-area-inset-right, 0px));
           z-index: 900;
           display: flex;
           flex-direction: column;

@@ -252,8 +252,8 @@ export class FlowContextChip extends FlowCornerElement {
           /* The shared 12px corner inset (work document #63's space
            * manager): the accordion containers hang from the same edge
            * the chips do, so panels and chips read as one column */
-          top: 12px;
-          left: 12px;
+          top: calc(12px + env(safe-area-inset-top, 0px));
+          left: calc(12px + env(safe-area-inset-left, 0px));
           z-index: 900;
           display: flex;
           flex-direction: column;

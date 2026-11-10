@@ -486,8 +486,18 @@ function panelContainer(side) {
       /* The edge insets are measured from the live chips (inline
          styles); these fallbacks hold until then: the chips' 44px
          target height plus the gutter, from the 12px edge inset */
-      .corner-panels-left { left: 12px; top: 62px; bottom: 62px; }
-      .corner-panels-right { right: 12px; top: 62px; bottom: 62px; }
+      /* The insets keep the OS back/home gestures' safe areas
+         (guidelines \u00a713) */
+      .corner-panels-left {
+        left: calc(12px + env(safe-area-inset-left, 0px));
+        top: calc(62px + env(safe-area-inset-top, 0px));
+        bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+      }
+      .corner-panels-right {
+        right: calc(12px + env(safe-area-inset-right, 0px));
+        top: calc(62px + env(safe-area-inset-top, 0px));
+        bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+      }
       /* The portals share the span equally weighted by their accordion
        * count (set inline per corner), so every open accordion on the
        * side gets the same share of the space — the bottom one's edge

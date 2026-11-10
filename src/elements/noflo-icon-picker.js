@@ -97,7 +97,8 @@ export class NofloIconPicker extends HTMLElement {
           border-radius: 4px;
           padding: 3px 6px;
           font-family: inherit;
-          font-size: 10px;
+          /* The 16px floor (guidelines \u00a713): no iOS focus zoom */
+          font-size: 16px;
         }
         .grid {
           display: grid;

@@ -38,8 +38,8 @@ html {
 }
 #controls {
   position: fixed;
-  top: 10px;
-  left: 10px;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: calc(10px + env(safe-area-inset-left, 0px));
   z-index: 1000;
   padding: 10px;
   display: flex;

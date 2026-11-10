@@ -44,7 +44,9 @@ select.form-control {
   border: 1px solid var(--ui-border, #333);
   border-radius: 4px;
   padding: 5px 8px;
-  font-size: 13px;
+  /* The 16px floor (guidelines \u00a713): below it iOS Safari zooms the
+     page on focus, and maximum-scale is not the fix */
+  font-size: 16px;
   font-family: inherit;
   width: 100%;
   box-sizing: border-box;

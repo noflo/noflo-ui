@@ -636,7 +636,8 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           border-radius: 4px;
           color: inherit;
           font: inherit;
-          font-size: 11px;
+          /* The 16px floor (guidelines \u00a713): no iOS focus zoom */
+          font-size: 16px;
           padding: 6px 8px;
           outline: none;
         }

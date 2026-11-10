@@ -118,8 +118,8 @@ export class FlowProjectCorner extends FlowCornerElement {
     return `
         :host {
           position: fixed;
-          bottom: 12px;
-          left: 12px;
+          bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+          left: calc(12px + env(safe-area-inset-left, 0px));
           z-index: 900;
           display: flex;
           flex-direction: column;

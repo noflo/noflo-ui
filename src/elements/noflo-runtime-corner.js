@@ -377,8 +377,8 @@ export class FlowRuntimeCorner extends FlowCornerElement {
     return `
         :host {
           position: fixed;
-          top: 12px;
-          right: 12px;
+          top: calc(12px + env(safe-area-inset-top, 0px));
+          right: calc(12px + env(safe-area-inset-right, 0px));
           z-index: 900;
           display: flex;
           flex-direction: column;
